@@ -1,0 +1,74 @@
+.scroll-crawler {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.scroll-crawler--hidden {
+  opacity: 0;
+}
+
+/* ── TRACK ────────────────────────────────────── */
+.scroll-crawler__track {
+  position: relative;
+  width: 1px;
+  height: 160px;
+  background: var(--web-stroke);
+  /* Slight gradient so top/bottom fade out */
+  mask-image: linear-gradient(to bottom, transparent, var(--accent) 15%, var(--accent) 85%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, var(--accent) 15%, var(--accent) 85%, transparent);
+}
+
+/* ── WEB NODES ────────────────────────────────── */
+.scroll-crawler__node {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.35;
+}
+
+/* ── SPIDER ICON ──────────────────────────────── */
+.scroll-crawler__spider {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--glow));
+  transition: top 0.12s ease;
+  /* Subtle oscillation handled by spinning shadow */
+  animation: crawlPulse 2s ease-in-out infinite;
+}
+
+@keyframes crawlPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px var(--glow)); }
+  50%       { filter: drop-shadow(0 0 10px var(--glow)); }
+}
+
+/* ── LABEL ────────────────────────────────────── */
+.scroll-crawler__label {
+  font-size: 0.48rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text3);
+  writing-mode: vertical-lr;
+  opacity: 0.6;
+}
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (max-width: 768px) {
+  .scroll-crawler { display: none; }
+}

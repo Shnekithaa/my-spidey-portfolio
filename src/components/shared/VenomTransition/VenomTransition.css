@@ -1,0 +1,8 @@
+.venom-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  pointer-events: none;
+  opacity: 0;
+  /* no CSS transition — JS controls opacity directly for precise timing */
+}

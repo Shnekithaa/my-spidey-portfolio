@@ -1,0 +1,137 @@
+/* ── TOKENS ─────────────────────────────────────── */
+:root {
+  /* Light mode — Spidey (red) */
+  --bg:             #f5f0eb;
+  --bg2:            #ede8e2;
+  --surface:        #ffffff;
+  --surface2:       #faf8f5;
+
+  --accent:         #cc1111;
+  --accent-bright:  #ff3333;
+  --accent-deep:    #8b0000;
+  --glow:           rgba(204, 17, 17, 0.35);
+  --glow-soft:      rgba(204, 17, 17, 0.15);
+
+  --border:         rgba(180, 20, 20, 0.13);
+  --border-hover:   rgba(180, 20, 20, 0.45);
+
+  --text:           #1a0a0a;
+  --text2:          #4a2020;
+  --text3:          #7a4040;
+
+  /* Web SVG color (naturalised, from card edges) */
+  --web-stroke:     rgba(160, 15, 15, 0.22);
+
+  --nav-bg:         rgba(245, 240, 235, 0.92);
+  --card-shadow:    0 2px 16px rgba(180, 20, 20, 0.07);
+  --card-hover-shadow: 0 10px 40px rgba(180, 20, 20, 0.18);
+
+  --transition: 0.4s ease;
+}
+
+[data-theme='dark'] {
+  /* Dark mode — Venom (black + white web) */
+  --bg:             #09090e;
+  --bg2:            #0e0e18;
+  --surface:        #121220;
+  --surface2:       #18182a;
+
+  --accent:         #7ccd40;
+  --accent-bright:  #a0f060;
+  --accent-deep:    #4a8020;
+  --glow:           rgba(100, 200, 50, 0.32);
+  --glow-soft:      rgba(100, 200, 50, 0.12);
+
+  --border:         rgba(120, 200, 80, 0.14);
+  --border-hover:   rgba(120, 200, 80, 0.45);
+
+  --text:           #e8f8d8;
+  --text2:          #b8d890;
+  --text3:          #789060;
+
+  /* Venom webs = white */
+  --web-stroke:     rgba(255, 255, 255, 0.18);
+
+  --nav-bg:         rgba(9, 9, 14, 0.93);
+  --card-shadow:    0 2px 16px rgba(0, 0, 0, 0.5);
+  --card-hover-shadow: 0 10px 40px rgba(100, 200, 50, 0.15);
+}
+
+/* ── RESET ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+  cursor: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  html, body {
+    touch-action: manipulation;
+  }
+
+  body {
+    cursor: auto;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [data-hover] {
+    cursor: auto !important;
+    pointer-events: auto;
+  }
+}
+
+/* ── SCROLLBAR ───────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+/* ── TYPOGRAPHY BASE ─────────────────────────────── */
+a { color: inherit; text-decoration: none; }
+
+/* ── UTILITIES ───────────────────────────────────── */
+.font-display  { font-family: 'Bebas Neue', sans-serif; }
+.font-mono     { font-family: 'Space Mono', monospace; }
+.font-body     { font-family: 'Rajdhani', sans-serif; }
+
+/* ── SECTION BASE ────────────────────────────────── */
+.section-base {
+  padding: 7rem 8vw 5rem;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .section-base { padding: 5rem 5vw 3rem; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 15px; }
+  .section-base { padding: 4.6rem 4.5vw 2.2rem; }
+}
+
+/* ── FADE-IN ANIMATION ───────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up          { animation: fadeInUp 0.7s ease both; }
+.delay-1          { animation-delay: 0.12s; }
+.delay-2          { animation-delay: 0.26s; }
+.delay-3          { animation-delay: 0.42s; }

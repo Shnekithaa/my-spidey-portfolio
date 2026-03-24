@@ -1,0 +1,111 @@
+.web-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  transition:
+    box-shadow 0.32s ease,
+    transform 0.28s ease,
+    border-color 0.28s ease,
+    background 0.4s ease;
+  box-shadow: var(--card-shadow);
+  /* cursor position for glow */
+  --mx: 50%;
+  --my: 50%;
+}
+
+/* ── RADIAL GLOW (follows cursor) ───────────────── */
+.web-card__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mx) var(--my),
+    var(--glow-soft) 0%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── WEB SVG LAYER ──────────────────────────────── */
+.web-card__web {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.38s ease;
+}
+
+.web-card__web svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── CONTENT ────────────────────────────────────── */
+.web-card__content {
+  position: relative;
+  z-index: 3;
+}
+
+/* ── HOVER STATE ────────────────────────────────── */
+.web-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hover);
+  box-shadow: var(--card-hover-shadow);
+}
+
+.web-card:hover .web-card__glow {
+  opacity: 1;
+}
+
+.web-card:hover .web-card__web {
+  opacity: 1;
+}
+
+/* ── SUBTLE VARIANT (text-heavy cards) ──────────── */
+/* Greatly reduces all visual noise so text remains readable */
+.web-card--subtle:hover {
+  transform: translateY(-2px);
+}
+
+.web-card--subtle .web-card__glow {
+  /* Smaller, dimmer glow — just a hint */
+  background: radial-gradient(
+    circle at var(--mx) var(--my),
+    var(--glow-soft) 0%,
+    transparent 45%
+  );
+}
+
+.web-card--subtle:hover .web-card__glow {
+  opacity: 0.5;
+}
+
+.web-card--subtle:hover .web-card__web {
+  /* Web visible but very faint — does not compete with text */
+  opacity: 0.22;
+}
+
+/* ── SUPPRESS HOVER (used during thwip) ─────────── */
+/* Double-class selector beats .web-card:hover specificity */
+.web-card.web-card--suppress-hover,
+.web-card.web-card--suppress-hover:hover {
+  transform: none !important;
+  box-shadow: var(--card-shadow) !important;
+  border-color: var(--border) !important;
+}
+.web-card.web-card--suppress-hover .web-card__glow,
+.web-card.web-card--suppress-hover:hover .web-card__glow {
+  opacity: 0 !important;
+  transition: none !important;
+}
+.web-card.web-card--suppress-hover .web-card__web,
+.web-card.web-card--suppress-hover:hover .web-card__web {
+  opacity: 0 !important;
+  transition: none !important;
+}

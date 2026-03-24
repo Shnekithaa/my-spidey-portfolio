@@ -1,0 +1,336 @@
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding-top: 80px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 55%, var(--glow-soft) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* ── AMBIENT WEB ──────────────────────────────── */
+.hero__ambient-web {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.09;
+  pointer-events: none;
+}
+
+/* ── DIAGONAL MASK SPLIT ──────────────────────── */
+.hero__mask-split {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero__mask-left,
+.hero__mask-right {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Left half: clip to upper-left triangle */
+.hero__mask-left {
+  clip-path: polygon(60% 0%, 100% 0%, 100% 100%, 40% 100%);
+  background: linear-gradient(135deg, transparent 45%, var(--glow-soft) 100%);
+  opacity: 0.55;
+}
+
+/* Right half: clip to lower-right triangle */
+.hero__mask-right {
+  clip-path: polygon(60% 0%, 100% 0%, 100% 100%, 40% 100%);
+  justify-content: center;
+  padding-right: 4vw;
+  opacity: 0.04;
+}
+
+.hero__mask-symbol {
+  font-size: clamp(16rem, 28vw, 32rem);
+  line-height: 1;
+  user-select: none;
+  filter: drop-shadow(0 0 60px var(--glow));
+}
+
+.hero__mask-right .hero__mask-symbol {
+  font-size: clamp(14rem, 24vw, 28rem);
+  opacity: 0.7;
+}
+
+/* ── SWING-IN ANIMATION ───────────────────────── */
+/* Content "swings" in like attached to a web strand from above */
+@keyframes swingIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-3deg);
+    transform-origin: top center;
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(6px) rotate(1deg);
+  }
+  80% {
+    transform: translateY(-3px) rotate(-0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.hero__swing {
+  animation: swingIn 0.9s cubic-bezier(0.34, 1.38, 0.64, 1) both;
+}
+.hero__swing--delay-1 { animation-delay: 0.1s; }
+.hero__swing--delay-2 { animation-delay: 0.22s; }
+.hero__swing--delay-3 { animation-delay: 0.36s; }
+
+/* ── CONTENT ──────────────────────────────────── */
+.hero__content {
+  position: relative;
+  z-index: 2;
+  max-width: 680px;
+}
+
+/* ── GREETING ─────────────────────────────────── */
+.hero__greeting {
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hero__greeting-line {
+  display: inline-block;
+  width: 38px;
+  height: 1px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── NAME WRAP + SPIDER-SENSE ─────────────────── */
+.hero__name-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.4rem;
+}
+
+/* Spider-Sense SVG — centred over the name text */
+.hero__sense {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.hero__sense--active {
+  opacity: 1;
+  /* Subtle pulse */
+  animation: sensePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes sensePulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+/* ── NAME ─────────────────────────────────────── */
+.hero__name {
+  font-size: clamp(3.2rem, 9vw, 7.2rem);
+  letter-spacing: 0.03em;
+  line-height: 0.94;
+  color: var(--text);
+  margin-bottom: 0;
+  transition: color var(--transition);
+  position: relative;
+}
+
+.hero__name--accent {
+  color: var(--accent);
+}
+
+/* ── SUB ──────────────────────────────────────── */
+.hero__sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 1.2rem;
+}
+
+/* ── BIO ──────────────────────────────────────── */
+.hero__bio {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.75;
+  color: var(--text2);
+  max-width: 520px;
+  margin-bottom: 2.6rem;
+}
+
+/* ── CTA ──────────────────────────────────────── */
+.hero__cta {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── BUTTONS ──────────────────────────────────── */
+.btn {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: none;
+  transition: all 0.25s ease;
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn--primary {
+  padding: 14px 34px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.btn--primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.14);
+  transform: translateX(-100%) skewX(-15deg);
+  transition: transform 0.38s ease;
+}
+
+.btn--primary:hover {
+  box-shadow: 0 0 28px var(--glow);
+  transform: translateY(-2px);
+}
+
+.btn--primary:hover::before {
+  transform: translateX(110%) skewX(-15deg);
+}
+
+.btn--outline {
+  padding: 13px 30px;
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.btn--outline:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 20px var(--glow);
+  transform: translateY(-2px);
+}
+
+/* ── FLOATING SPIDER (separate from mask) ─────── */
+.hero__spider {
+  position: absolute;
+  right: 6vw;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(6rem, 12vw, 14rem);
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+  animation: spiderFloat 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px var(--glow));
+}
+
+@keyframes spiderFloat {
+  0%, 100% { transform: translateY(-50%) rotate(-4deg); }
+  50%       { transform: translateY(-53%) rotate(4deg); }
+}
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (max-width: 900px) {
+  .hero__mask-right { display: none; }
+  .hero__mask-left  { display: none; }
+  .hero__spider     { display: none; }
+  .hero__content    { max-width: 100%; }
+}
+
+@media (max-width: 700px) {
+  .hero {
+    min-height: calc(84svh - 56px);
+    align-items: flex-start;
+    padding-top: 80px;
+    padding-bottom: 0.5rem;
+  }
+
+  .hero__greeting {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero__name {
+    font-size: clamp(2.4rem, 12vw, 4.4rem);
+  }
+
+  .hero__sub {
+    font-size: 0.56rem;
+    letter-spacing: 0.15em;
+  }
+
+  .hero__bio {
+    font-size: 0.95rem;
+    line-height: 1.62;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero__cta {
+    width: 100%;
+    gap: 0.55rem;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .btn--primary,
+  .btn--outline {
+    padding: 11px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    min-height: calc(78svh - 56px);
+    padding-top: 74px;
+    padding-bottom: 0.35rem;
+  }
+
+  .hero__bio {
+    margin-bottom: 1rem;
+  }
+}
