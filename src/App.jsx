@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useTheme }       from './hooks/useTheme';
 import Nav                from './components/Nav/Nav';
 import Hero               from './components/Hero/Hero';
@@ -36,6 +36,15 @@ export default function App() {
       localStorage.setItem('spiders-enabled', String(next));
       return next;
     });
+  }, []);
+
+  useEffect(() => {
+    // Prevent hash persistence from restoring a deep section on reload.
+    const cleanUrl = `${window.location.pathname}${window.location.search}`;
+    if (window.location.hash) {
+      window.history.replaceState(null, '', cleanUrl);
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, []);
 
   return (

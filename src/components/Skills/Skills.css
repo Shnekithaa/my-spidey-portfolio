@@ -242,3 +242,19 @@
     margin-top: 2rem;
   }
 }
+
+/* Touch devices: keep tag tap corner-web shot only, suppress full card web layer */
+@media (hover: none), (pointer: coarse) {
+  .skills__cat.web-card:hover,
+  .skills__cat.web-card {
+    transform: none;
+  }
+
+  .skills__cat .web-card__glow,
+  .skills__cat .web-card__web,
+  .skills__cat.web-card:hover .web-card__glow,
+  .skills__cat.web-card:hover .web-card__web {
+    opacity: 0 !important;
+    transition: none !important;
+  }
+}

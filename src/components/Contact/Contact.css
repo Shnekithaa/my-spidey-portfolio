@@ -90,6 +90,17 @@
   filter: drop-shadow(0 0 16px var(--glow)) drop-shadow(0 0 36px var(--glow-soft));
 }
 
+.contact__signal-btn--buzzing {
+  animation: signalBuzzStart 0.12s ease-in-out infinite;
+}
+
+@keyframes signalBuzzStart {
+  0%, 100% { transform: translate(0,0) rotate(0deg) scale(1); }
+  25%      { transform: translate(-2px,1px) rotate(-0.8deg) scale(1.01); }
+  50%      { transform: translate(2px,-1px) rotate(0.8deg) scale(1.01); }
+  75%      { transform: translate(-1px,2px) rotate(-0.4deg) scale(1.005); }
+}
+
 .signal__svg { width: 100%; height: 100%; display: block; }
 
 @keyframes spinRing {
@@ -144,6 +155,15 @@
   display: flex;
   margin-bottom: 1.8rem;
   border-bottom: 1px solid var(--border);
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  transition: opacity 0.32s ease, transform 0.36s cubic-bezier(0.34,1.2,0.64,1);
+}
+
+.contact__panel--open .contact__tabs {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-delay: 0.14s;
 }
 
 .contact__tab {
@@ -157,16 +177,51 @@
   text-transform: uppercase;
   color: var(--text3);
   cursor: none;
-  transition: color 0.2s, border-color 0.2s;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: color 0.2s, border-color 0.2s, opacity 0.24s ease, transform 0.24s ease;
+}
+
+.contact__panel--open .contact__tab {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.contact__panel--open .contact__tab:nth-child(1) {
+  transition-delay: 0.18s;
+}
+
+.contact__panel--open .contact__tab:nth-child(2) {
+  transition-delay: 0.24s;
 }
 .contact__tab:hover { color: var(--text2); }
 .contact__tab--active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* ── TAB PANELS ───────────────────────────────── */
-.contact__tab-panel { display: none; }
+.contact__tab-panel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition:
+    max-height 0.34s ease,
+    opacity 0.26s ease,
+    transform 0.3s ease,
+    visibility 0s linear 0.34s;
+}
 .contact__tab-panel--active {
-  display: block;
-  animation: tabFadeIn 0.3s ease both;
+  max-height: 1200px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    max-height 0.45s cubic-bezier(0.34,1.1,0.64,1),
+    opacity 0.28s ease 0.06s,
+    transform 0.34s cubic-bezier(0.34,1.2,0.64,1) 0.06s,
+    visibility 0s linear 0s;
 }
 @keyframes tabFadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -355,11 +410,28 @@
   /* Open: fixed height row so signal stays above panel */
   .contact__stage--open .contact__signal-wrap {
     width: 100% !important;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
+    order: 2;
+    margin-top: 0.35rem;
   }
+
+  .contact__stage--open.contact__stage--ready .contact__signal-wrap {
+    width: auto !important;
+  }
+
   .contact__signal-btn { width: 200px; height: 200px; }
-  .contact__stage--open .contact__signal-btn { width: 150px; height: 150px; }
+  .contact__stage--open .contact__signal-btn { width: 112px; height: 112px; }
+
+  .contact__stage--open .contact__signal-hint {
+    font-size: 0.52rem;
+    letter-spacing: 0.18em;
+  }
+
+  .contact__panel {
+    order: 1;
+  }
+
   /* Panel expands vertically on mobile */
   .contact__panel {
     flex: 0 0 0;
@@ -397,8 +469,8 @@
   }
 
   .contact__stage--open .contact__signal-btn {
-    width: 136px;
-    height: 136px;
+    width: 98px;
+    height: 98px;
   }
 
   .contact__tabs {
@@ -406,6 +478,10 @@
     gap: 0.3rem;
     overflow-x: auto;
     scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
   }
 
   .contact__tabs::-webkit-scrollbar {

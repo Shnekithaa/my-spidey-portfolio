@@ -368,14 +368,37 @@ export default function Contact({ theme }) {
   const [active, setActive]   = useState(false);
   const [tab, setTab]         = useState('connect');
   const [ready, setReady]     = useState(false); // delays panel render until after signal moves
+  const [buzzing, setBuzzing] = useState(false);
+  const openTimerRef = useRef(null);
+  const closeTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(openTimerRef.current);
+      clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const toggle = useCallback(() => {
     if (!active) {
+      clearTimeout(closeTimerRef.current);
       setActive(true);
-      setTimeout(() => setReady(true), 420); // wait for signal slide to complete
+      setBuzzing(true);
+
+      if (window.innerWidth <= 800 && navigator.vibrate) {
+        navigator.vibrate([50, 40, 50]);
+      }
+
+      // Let the signal buzz first, then reveal tabs/panel.
+      openTimerRef.current = setTimeout(() => {
+        setReady(true);
+        setBuzzing(false);
+      }, 520);
     } else {
+      clearTimeout(openTimerRef.current);
       setReady(false);
-      setTimeout(() => setActive(false), 200);
+      setBuzzing(false);
+      closeTimerRef.current = setTimeout(() => setActive(false), 220);
     }
   }, [active]);
 
@@ -383,12 +406,12 @@ export default function Contact({ theme }) {
     <section id="contact" className="contact section-base" aria-label="Contact">
       <SectionHeader num="05" label="Let's Connect" title="CONTACT" />
 
-      <div className={`contact__stage${active ? ' contact__stage--open' : ''}`}>
+      <div className={`contact__stage${active ? ' contact__stage--open' : ''}${ready ? ' contact__stage--ready' : ''}`}>
 
         {/* ── Signal wrapper — animates from centre to left ── */}
         <div className={`contact__signal-wrap${active ? ' contact__signal-wrap--left' : ''}`}>
           <button
-            className={`contact__signal-btn${active ? ' contact__signal-btn--active' : ''}`}
+            className={`contact__signal-btn${active ? ' contact__signal-btn--active' : ''}${buzzing ? ' contact__signal-btn--buzzing' : ''}`}
             onClick={toggle}
             aria-label={active ? 'Collapse contact' : 'Reveal contact'}
             aria-expanded={active}

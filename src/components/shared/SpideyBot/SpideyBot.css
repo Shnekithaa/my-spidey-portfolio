@@ -7,6 +7,12 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+  pointer-events: none;
+}
+
+.spidey-bot__fab,
+.spidey-bot__panel {
+  pointer-events: auto;
 }
 
 .spidey-bot__fab {
@@ -50,6 +56,9 @@
 }
 
 .spidey-bot__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
   display: flex;
   flex-direction: column;
   width: min(360px, calc(100vw - 28px));
@@ -86,6 +95,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface2) 88%, transparent);
+  flex-shrink: 0;
 }
 
 .spidey-bot__mode-badge {
@@ -110,6 +120,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .spidey-bot__avatar {
@@ -120,6 +132,7 @@
   border-radius: 50%;
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   box-shadow: 0 0 12px var(--glow-soft);
+  flex-shrink: 0;
 }
 
 .spidey-bot__title {
@@ -147,6 +160,10 @@
   background: transparent;
   color: var(--text2);
   cursor: none;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  line-height: 1;
 }
 
 .spidey-bot__close:hover {
@@ -154,12 +171,87 @@
   color: var(--accent);
 }
 
+/* ── DRAG HANDLE (desktop: move card; mobile: resize sheet) ───────── */
+.spidey-bot__drag-handle {
+  display: none; /* shown only on mobile via media query */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 6px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  /* Enlarge hit target without growing layout */
+  position: relative;
+}
+
+.spidey-bot__drag-handle::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+.spidey-bot__drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Pill — visible at rest, fades out while resizing */
+.spidey-bot__drag-pill {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-hover);
+  /* pill and hint share the same transition timing so the swap looks clean */
+  transition:
+    width    0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity  0.18s ease,
+    transform 0.18s ease;
+}
+
+/* ↕ hint — always in the DOM (display:block set in mobile query),
+   invisible and collapsed at rest; revealed while resizing */
+.spidey-bot__drag-hint {
+  display: none;          /* overridden to block inside ≤480px query */
+  font-size: 1rem;
+  color: var(--accent);
+  line-height: 1;
+  pointer-events: none;
+  position: absolute;     /* sits in the same spot as the pill */
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity  0.18s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* slight spring on expand */
+}
+
+/* ── FAB animation base ───────────────────────── */
+.spidey-bot__fab {
+  transition:
+    transform  0.18s ease,
+    box-shadow 0.2s  ease,
+    border-color 0.2s ease,
+    opacity    0.22s ease,
+    visibility 0.22s ease;
+}
+
 .spidey-bot__quick-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.spidey-bot__quick-actions::-webkit-scrollbar {
+  display: none;
 }
 
 .spidey-bot__chip {
@@ -172,6 +264,8 @@
   font-size: 0.54rem;
   letter-spacing: 0.06em;
   cursor: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .spidey-bot__chip:disabled {
@@ -298,6 +392,7 @@
   gap: 8px;
   padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .spidey-bot__input {
@@ -339,17 +434,17 @@
   color: var(--accent);
 }
 
+/* ── TABLET (≤768px) ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .spidey-bot {
-    right: 8px;
-    left: auto;
-    bottom: max(8px, env(safe-area-inset-bottom));
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
     align-items: flex-end;
   }
 
   .spidey-bot__fab {
     align-self: flex-end;
-    padding: 8px 12px;
+    padding: 8px 13px;
   }
 
   .spidey-bot__fab-text {
@@ -357,9 +452,9 @@
   }
 
   .spidey-bot__panel {
-    width: min(94vw, 360px);
-    max-height: 66vh;
-    transform-origin: bottom center;
+    width: min(92vw, 360px);
+    max-height: min(75vh, 520px);
+    transform-origin: bottom right;
   }
 
   .spidey-bot__mode-badge {
@@ -368,45 +463,229 @@
   }
 }
 
+/* ── MOBILE (≤480px) ──────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .spidey-bot {
-    right: 6px;
-    bottom: max(6px, env(safe-area-inset-bottom));
+    right: 0;
+    left: 0;
+    bottom: 0;
+    align-items: flex-end;
+    gap: 0;
   }
 
-  .spidey-bot__panel {
-    width: min(95vw, 332px);
-    max-height: 58vh;
-  }
-
-  .spidey-bot__header {
-    flex-wrap: wrap;
-    row-gap: 6px;
+  /* FAB — fixed circle, bottom-right, always rendered but fades out when open */
+  .spidey-bot__fab {
+    position: fixed;
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 182;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    align-self: unset;
   }
 
   .spidey-bot__fab-text {
     display: none;
   }
 
-  .spidey-bot__mode-badge {
-    order: 3;
+  .spidey-bot__fab-icon {
+    font-size: 1.25rem;
   }
 
+  .spidey-bot--open .spidey-bot__fab {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.88);
+  }
+
+  /* Panel — full-width bottom sheet */
+  .spidey-bot__panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    transform-origin: bottom center;
+    transform: translateY(100%);
+    background:
+      radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
+      color-mix(in srgb, var(--surface) 96%, transparent);
+  }
+
+  .spidey-bot--open .spidey-bot__panel {
+    transform: translateY(0);
+  }
+
+  /* Show drag handle on mobile — doubles as resize handle */
+  .spidey-bot__drag-handle {
+    display: flex;
+    cursor: ns-resize;
+    padding: 12px 0 8px;
+    position: relative;       /* anchor for absolute-positioned ↕ hint */
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ↕ hint — rendered but invisible at rest */
+  .spidey-bot__drag-hint {
+    display: block;
+  }
+
+  /* ── WHILE RESIZING: pill shrinks away, ↕ expands in ── */
+
+  /* Pill fades out and collapses to a dot */
+  .spidey-bot--resizing .spidey-bot__drag-pill {
+    opacity: 0;
+    width: 8px;
+    transform: scaleY(0.5);
+  }
+
+  /* ↕ blooms into view */
+  .spidey-bot--resizing .spidey-bot__drag-hint {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* ── HEADER ── */
+  .spidey-bot__header {
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 6px 14px 10px;
+    gap: 10px;
+  }
+
+  .spidey-bot__title-wrap {
+    flex: 1;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .spidey-bot__avatar {
+    width: 26px;
+    height: 26px;
+  }
+
+  .spidey-bot__title {
+    font-size: 0.95rem;
+  }
+
+  .spidey-bot__subtitle {
+    font-size: 0.5rem;
+  }
+
+  .spidey-bot__mode-badge {
+    order: unset;
+    font-size: 0.44rem;
+    padding: 2px 5px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .spidey-bot__close {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+    border-color: var(--border-hover);
+    background: color-mix(in srgb, var(--surface2) 80%, transparent);
+  }
+
+  /* ── CHIPS ── */
   .spidey-bot__quick-actions {
-    gap: 5px;
-    padding: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 8px 14px;
   }
 
   .spidey-bot__chip {
     font-size: 0.5rem;
-    padding: 4px 7px;
+    padding: 5px 9px;
+    letter-spacing: 0.04em;
+    height: 26px;
+    display: flex;
+    align-items: center;
   }
 
+  /* ── MESSAGES ── */
+  .spidey-bot__messages {
+    flex: 1;
+    min-height: 80px;
+    padding: 12px 14px;
+    gap: 10px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .spidey-bot__message {
+    max-width: 96%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .spidey-bot__fit        { padding: 10px; border-radius: 12px; }
+  .spidey-bot__fit-score  { font-size: 0.65rem; }
+  .spidey-bot__fit-score strong { font-size: 0.88rem; }
+  .spidey-bot__fit-row    { font-size: 0.68rem; }
+  .spidey-bot__links      { gap: 5px; }
+  .spidey-bot__link       { font-size: 0.58rem; padding: 4px 9px; }
+
+  /* ── FORM ── */
   .spidey-bot__form {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 14px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .spidey-bot__input {
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 12px;
+    font-size: 16px;
   }
 
   .spidey-bot__send {
-    min-height: 34px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+}
+
+/* ── VERY SMALL (≤360px) ────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .spidey-bot__panel {
+    max-height: 86vh;
+  }
+
+  .spidey-bot__header {
+    padding: 9px 12px;
+  }
+
+  .spidey-bot__close {
+    width: 28px;
+    height: 28px;
+  }
+
+  .spidey-bot__message {
+    font-size: 0.77rem;
+  }
+
+  .spidey-bot__form {
+    padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+    gap: 6px;
+  }
+
+  .spidey-bot__input,
+  .spidey-bot__send {
+    height: 38px;
   }
 }

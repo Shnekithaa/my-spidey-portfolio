@@ -2,6 +2,22 @@
   background: var(--bg);
 }
 
+/* Mobile web-shot target base (inactive by default) */
+.about__webshot-target {
+  position: relative;
+  isolation: isolate;
+}
+
+.about__webshot-target::before,
+.about__webshot-target::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+
 @media (max-width: 700px) {
   .about.section-base {
     padding-top: 2.1rem;
@@ -190,5 +206,48 @@
   .about__ach-desc {
     font-size: 0.84rem;
     line-height: 1.52;
+  }
+
+  /* Mobile thwip effect inspired by Skills section web shot */
+  .about__webshot-target {
+    transition: transform 0.18s ease, box-shadow 0.2s ease;
+    touch-action: manipulation;
+  }
+
+  .about__webshot-target--active {
+    transform: translateY(-1px) scale(0.995);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .about__webshot-target--active::before {
+    opacity: 1;
+    background:
+      linear-gradient(140deg, color-mix(in srgb, var(--accent) 86%, transparent), transparent 58%) top left / 54px 54px no-repeat,
+      linear-gradient(220deg, color-mix(in srgb, var(--accent) 86%, transparent), transparent 58%) top right / 54px 54px no-repeat,
+      linear-gradient(40deg, color-mix(in srgb, var(--accent) 86%, transparent), transparent 58%) bottom left / 54px 54px no-repeat,
+      linear-gradient(320deg, color-mix(in srgb, var(--accent) 86%, transparent), transparent 58%) bottom right / 54px 54px no-repeat;
+    animation: aboutCornerWeb 0.46s ease-out forwards;
+  }
+
+  .about__webshot-target--active::after {
+    opacity: 1;
+    background:
+      radial-gradient(circle at 0 0, color-mix(in srgb, var(--accent) 44%, transparent) 0, transparent 62%) top left / 72px 72px no-repeat,
+      radial-gradient(circle at 100% 0, color-mix(in srgb, var(--accent) 44%, transparent) 0, transparent 62%) top right / 72px 72px no-repeat,
+      radial-gradient(circle at 0 100%, color-mix(in srgb, var(--accent) 44%, transparent) 0, transparent 62%) bottom left / 72px 72px no-repeat,
+      radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--accent) 44%, transparent) 0, transparent 62%) bottom right / 72px 72px no-repeat;
+    animation: aboutShotPulse 0.46s ease-out forwards;
+  }
+
+  @keyframes aboutCornerWeb {
+    0% { opacity: 0; transform: scale(0.94); filter: blur(1px); }
+    45% { opacity: 0.95; transform: scale(1); filter: blur(0); }
+    100% { opacity: 0; transform: scale(1.02); }
+  }
+
+  @keyframes aboutShotPulse {
+    0% { opacity: 0; }
+    40% { opacity: 0.75; }
+    100% { opacity: 0; }
   }
 }

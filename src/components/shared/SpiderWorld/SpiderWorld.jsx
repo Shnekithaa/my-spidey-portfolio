@@ -8,6 +8,9 @@ const d2    = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
 function isDark() {
   return document.documentElement.getAttribute('data-theme') === 'dark';
 }
+function supportsFinePointer() {
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
 function bodyCol() { return isDark() ? '#b8f090' : '#5a0000'; }
 function legCol()  { return isDark() ? '#88cc60' : '#7a0000'; }
 function webCol(a) { return isDark() ? `rgba(190,255,150,${a})` : `rgba(110,4,4,${a})`; }
@@ -244,6 +247,7 @@ function webArc(ctx, cx, cy, a1, a2, r, ri) {
 export default function SpiderWorld({ enabled = true }) {
   const canvasRef    = useRef(null);
   const rafId        = useRef(null);
+  const isDesktop    = useRef(supportsFinePointer());
   const mouse        = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const lastMouse    = useRef({ x: -999, y: -999 });
   const globalIdle   = useRef(0);
@@ -260,11 +264,16 @@ export default function SpiderWorld({ enabled = true }) {
   const compWeb = useRef(null);
 
   /* ── Crawlers — start in idle-web state ── */
-  const crawlers = useRef([makeCrawler(0), makeCrawler(1)]);
+  const crawlers = useRef([
+    makeCrawler(0, isDesktop.current),
+    makeCrawler(1, isDesktop.current),
+    ...(isDesktop.current ? [] : [makeCrawler(2, isDesktop.current)]),
+  ]);
 
-  function makeCrawler(id) {
+  function makeCrawler(id, desktopMode = true) {
     const W = window.innerWidth, H = window.innerHeight;
-    const edge = id % 4;
+    const edgeMap = desktopMode ? [0, 2] : [0, 1, 3];
+    const edge = edgeMap[id % edgeMap.length];
     let x, y;
     if (edge === 0)      { x = 80 + Math.random() * (W - 160); y = 16; }
     else if (edge === 1) { x = W - 16; y = 80 + Math.random() * (H - 160); }
@@ -284,6 +293,37 @@ export default function SpiderWorld({ enabled = true }) {
     };
   }
 
+  const resetCrawlers = useCallback((desktopMode) => {
+    crawlers.current = [
+      makeCrawler(0, desktopMode),
+      makeCrawler(1, desktopMode),
+      ...(desktopMode ? [] : [makeCrawler(2, desktopMode)]),
+    ];
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const onChange = () => {
+      const nextDesktopMode = media.matches;
+      if (nextDesktopMode === isDesktop.current) return;
+      isDesktop.current = nextDesktopMode;
+      comp.current = {
+        x: 200, y: 300, vx: 0, vy: 0,
+        angle: 0, legPhase: 0,
+        state: 'follow',
+        scatterVx: 0, scatterVy: 0, scatterTimer: 0,
+        silk: [], idleFrames: 0,
+      };
+      compWeb.current = null;
+      resetCrawlers(nextDesktopMode);
+      lastActivity.current = Date.now();
+      lastMouse.current = { x: -999, y: -999 };
+    };
+
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [resetCrawlers]);
+
   useEffect(() => {
     const resize = () => {
       if (!canvasRef.current) return;
@@ -296,6 +336,7 @@ export default function SpiderWorld({ enabled = true }) {
   }, []);
 
   useEffect(() => {
+    if (!isDesktop.current) return;
     const onMove = (e) => {
       mouse.current = { x: e.clientX, y: e.clientY };
       lastActivity.current = Date.now();
@@ -304,23 +345,29 @@ export default function SpiderWorld({ enabled = true }) {
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
-  // Click — scatter companion + nearby crawlers
+  // Pointer/tap — scatter companion (desktop) + nearby crawlers
   useEffect(() => {
-    const onClick = (e) => {
+    const onPointerDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       lastActivity.current = Date.now();
+      const px = e.clientX;
+      const py = e.clientY;
+
       const c = comp.current;
-      const away = Math.atan2(c.y - e.clientY, c.x - e.clientX);
-      c.scatterVx = Math.cos(away) * 14;
-      c.scatterVy = Math.sin(away) * 14;
-      c.scatterTimer = 45;
-      c.state = 'scatter';
-      c.silk  = [];
-      c.idleFrames = 0;
-      if (compWeb.current) compWeb.current.fadeOut = true;
+      if (isDesktop.current) {
+        const away = Math.atan2(c.y - py, c.x - px);
+        c.scatterVx = Math.cos(away) * 14;
+        c.scatterVy = Math.sin(away) * 14;
+        c.scatterTimer = 45;
+        c.state = 'scatter';
+        c.silk  = [];
+        c.idleFrames = 0;
+        if (compWeb.current) compWeb.current.fadeOut = true;
+      }
 
       // Disturb crawlers within 220px
       crawlers.current.forEach(cr => {
-        if (d2({ x: cr.x, y: cr.y }, { x: e.clientX, y: e.clientY }) < 220) {
+        if (d2({ x: cr.x, y: cr.y }, { x: px, y: py }) < 220) {
           const a = Math.random() * Math.PI * 2;
           cr.scatterVx = Math.cos(a) * 9;
           cr.scatterVy = Math.sin(a) * 9;
@@ -331,8 +378,8 @@ export default function SpiderWorld({ enabled = true }) {
         }
       });
     };
-    window.addEventListener('click', onClick);
-    return () => window.removeEventListener('click', onClick);
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    return () => window.removeEventListener('pointerdown', onPointerDown);
   }, []);
 
   // Scroll — counts as activity, scatter crawlers
@@ -373,6 +420,7 @@ export default function SpiderWorld({ enabled = true }) {
     const mx = mouse.current.x;
     const my = mouse.current.y;
     const c  = comp.current;
+    const desktopMode = isDesktop.current;
 
     // True idle = no mouse movement AND no scroll for 6s (360 frames)
     const msMoved = d2(mouse.current, lastMouse.current) > 2;
@@ -394,54 +442,57 @@ export default function SpiderWorld({ enabled = true }) {
     // Should companion weave? Only if:
     // 1. Companion has been idle 6s (360 frames at 60fps)
     // 2. Cursor is NOT hovering over card/section content
-    const cursorOverContent  = isCursorOverContent(mx, my);
-    const companionShouldWeave = c.idleFrames >= 360 && !cursorOverContent;
+    const cursorOverContent  = desktopMode ? isCursorOverContent(mx, my) : false;
+    const companionShouldWeave = desktopMode && c.idleFrames >= 360 && !cursorOverContent;
+    const recentActivity = msSinceActivity < 350;
 
     // Cancel web if cursor moved onto content
-    if (compWeb.current && !compWeb.current.fadeOut && cursorOverContent) {
+    if (desktopMode && compWeb.current && !compWeb.current.fadeOut && cursorOverContent) {
       compWeb.current.fadeOut = true;
     }
 
     /* ── UPDATE COMPANION ── */
-    if (c.state === 'scatter') {
-      c.x += c.scatterVx; c.y += c.scatterVy;
-      c.scatterVx *= 0.86; c.scatterVy *= 0.86;
-      c.scatterTimer--;
-      c.angle = Math.atan2(c.scatterVy, c.scatterVx);
-      c.x = clamp(c.x, 12, W - 12);
-      c.y = clamp(c.y, 12, H - 12);
-      if (c.scatterTimer <= 0) c.state = 'follow';
-    } else {
-      const DIST = 90;
-      const dd   = d2({ x: c.x, y: c.y }, { x: mx, y: my });
-      if (dd > DIST + 4) {
-        const ang = Math.atan2(my - c.y, mx - c.x);
-        const spd = clamp((dd - DIST) * 0.065, 0.2, 4.5);
-        c.vx = lerp(c.vx, Math.cos(ang) * spd, 0.14);
-        c.vy = lerp(c.vy, Math.sin(ang) * spd, 0.14);
-        c.angle = Math.atan2(c.vy, c.vx);
-        c.silk.push({ x: c.x, y: c.y });
-        if (c.silk.length > 22) c.silk.shift();
+    if (desktopMode) {
+      if (c.state === 'scatter') {
+        c.x += c.scatterVx; c.y += c.scatterVy;
+        c.scatterVx *= 0.86; c.scatterVy *= 0.86;
+        c.scatterTimer--;
+        c.angle = Math.atan2(c.scatterVy, c.scatterVx);
+        c.x = clamp(c.x, 12, W - 12);
+        c.y = clamp(c.y, 12, H - 12);
+        if (c.scatterTimer <= 0) c.state = 'follow';
       } else {
-        c.vx *= 0.75; c.vy *= 0.75;
-      }
-      c.x = clamp(c.x + c.vx, 12, W - 12);
-      c.y = clamp(c.y + c.vy, 12, H - 12);
+        const DIST = 90;
+        const dd   = d2({ x: c.x, y: c.y }, { x: mx, y: my });
+        if (dd > DIST + 4) {
+          const ang = Math.atan2(my - c.y, mx - c.x);
+          const spd = clamp((dd - DIST) * 0.065, 0.2, 4.5);
+          c.vx = lerp(c.vx, Math.cos(ang) * spd, 0.14);
+          c.vy = lerp(c.vy, Math.sin(ang) * spd, 0.14);
+          c.angle = Math.atan2(c.vy, c.vx);
+          c.silk.push({ x: c.x, y: c.y });
+          if (c.silk.length > 22) c.silk.shift();
+        } else {
+          c.vx *= 0.75; c.vy *= 0.75;
+        }
+        c.x = clamp(c.x + c.vx, 12, W - 12);
+        c.y = clamp(c.y + c.vy, 12, H - 12);
 
-      // Start web only when idle 6s AND not over content
-      if (companionShouldWeave && !compWeb.current) {
-        compWeb.current = createGrowingWeb(c.x, c.y, true);
+        // Start web only when idle 6s AND not over content
+        if (companionShouldWeave && !compWeb.current) {
+          compWeb.current = createGrowingWeb(c.x, c.y, true);
+        }
+        // Cancel if mouse moved
+        if (msMoved && compWeb.current && !compWeb.current.fadeOut) {
+          compWeb.current.fadeOut = true;
+          c.idleFrames = 0;
+        }
       }
-      // Cancel if mouse moved
-      if (msMoved && compWeb.current && !compWeb.current.fadeOut) {
-        compWeb.current.fadeOut = true;
-        c.idleFrames = 0;
-      }
+      c.legPhase += 0.10;
     }
-    c.legPhase += 0.10;
 
     /* ── UPDATE COMPANION WEB ── */
-    if (compWeb.current) {
+    if (desktopMode && compWeb.current) {
       const w = compWeb.current;
       if (!w.fadeOut) {
         w.alpha = Math.min(w.alpha + 0.022, 1.0);
@@ -530,7 +581,7 @@ export default function SpiderWorld({ enabled = true }) {
         }
 
         // When mouse becomes active, crawl away
-        if (!isGloballyIdle && msMoved) {
+        if (!isGloballyIdle && (desktopMode ? msMoved : recentActivity)) {
           if (cr.web) cr.web.fadeOut = true;
           cr.state = 'crawl';
           cr.silk  = [];
@@ -550,7 +601,7 @@ export default function SpiderWorld({ enabled = true }) {
     ════════════════════════════════════ */
 
     // Companion web
-    if (compWeb.current) drawGrowingWeb(ctx, compWeb.current);
+    if (desktopMode && compWeb.current) drawGrowingWeb(ctx, compWeb.current);
 
     // Crawler webs
     crawlers.current.forEach(cr => {
@@ -558,7 +609,7 @@ export default function SpiderWorld({ enabled = true }) {
     });
 
     // Companion silk trail
-    if (c.silk.length > 2 && c.state === 'follow') {
+    if (desktopMode && c.silk.length > 2 && c.state === 'follow') {
       ctx.save();
       ctx.strokeStyle = webCol(0.20); ctx.lineWidth = 0.65; ctx.lineCap = 'round';
       ctx.beginPath();
@@ -567,7 +618,7 @@ export default function SpiderWorld({ enabled = true }) {
     }
 
     // Dashed thread companion → cursor
-    if (c.state === 'follow' && !cursorOverContent) {
+    if (desktopMode && c.state === 'follow' && !cursorOverContent) {
       ctx.save();
       ctx.strokeStyle = webCol(0.16); ctx.lineWidth = 0.6;
       ctx.setLineDash([3, 6]); ctx.lineCap = 'round';
@@ -604,8 +655,10 @@ export default function SpiderWorld({ enabled = true }) {
     });
 
     // Companion
-    const compA = c.state === 'scatter' ? 0.45 : 0.88;
-    drawSpider(ctx, c.x, c.y, c.angle, 1.0, compA, c.legPhase);
+    if (desktopMode) {
+      const compA = c.state === 'scatter' ? 0.45 : 0.88;
+      drawSpider(ctx, c.x, c.y, c.angle, 1.0, compA, c.legPhase);
+    }
 
     rafId.current = requestAnimationFrame(loop);
   }, [enabled]);

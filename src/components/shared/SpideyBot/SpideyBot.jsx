@@ -617,22 +617,194 @@ function smoothScrollToSection(sectionId) {
   const node = document.getElementById(sectionId);
   if (!node) return;
   node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  window.history.replaceState(null, '', `#${sectionId}`);
+}
+
+/* ── Drag + Resize hook for mobile bottom sheet ────────────────────
+   - Drag handle pill: drag UP/DOWN to resize panel height
+   - If dragged far DOWN past threshold → close the panel
+   - Horizontal drag is ignored (sheet is full-width on mobile)
+   - On desktop the panel is a floating card; drag moves it freely
+────────────────────────────────────────────────────────────────────── */
+function useBoundedDrag(isOpen, onClose) {
+  const panelRef = useRef(null);
+
+  // ── desktop move drag state ──
+  const moveDragRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    baseX: 0,
+    baseY: 0,
+    panelLeft: 0,
+    panelTop: 0,
+    panelW: 0,
+    panelH: 0,
+    pointerId: null,
+  });
+
+  // ── mobile resize drag state ──
+  const resizeDragRef = useRef({
+    active: false,
+    startY: 0,
+    startHeight: 0,
+    pointerId: null,
+  });
+
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(null);
+
+  const isMobileViewport = useCallback(() => window.matchMedia('(max-width: 480px)').matches, []);
+
+  // Reset all state when panel closes
+  useEffect(() => {
+    if (!isOpen) {
+      setOffset({ x: 0, y: 0 });
+      setIsDragging(false);
+      setPanelHeight(null);
+      moveDragRef.current.active = false;
+      resizeDragRef.current.active = false;
+    }
+  }, [isOpen]);
+
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+  /* ── Pointer down on the drag-handle pill ──
+     Mobile  → start resize drag
+     Desktop → start move drag
+  */
+  const onPointerDown = useCallback((e) => {
+    if (!isOpen || !panelRef.current) return;
+    e.preventDefault();
+
+    if (isMobileViewport()) {
+      // Mobile: resize by dragging the pill up/down
+      const rect = panelRef.current.getBoundingClientRect();
+      const currentH = panelHeight || rect.height;
+
+      resizeDragRef.current = {
+        active: true,
+        startY: e.clientY,
+        startHeight: currentH,
+        pointerId: e.pointerId,
+      };
+      setIsDragging(true);
+    } else {
+      // Desktop: move the floating panel
+      const rect = panelRef.current.getBoundingClientRect();
+      moveDragRef.current = {
+        active: true,
+        startX: e.clientX,
+        startY: e.clientY,
+        baseX: offset.x,
+        baseY: offset.y,
+        panelLeft: rect.left,
+        panelTop: rect.top,
+        panelW: rect.width,
+        panelH: rect.height,
+        pointerId: e.pointerId,
+      };
+      setIsDragging(true);
+    }
+  }, [isOpen, isMobileViewport, panelHeight, offset.x, offset.y]);
+
+  /* ── Pointer move ── */
+  const onPointerMove = useCallback((e) => {
+    // Mobile resize path
+    const rs = resizeDragRef.current;
+    if (rs.active && rs.pointerId === e.pointerId) {
+      const minH = Math.round(window.innerHeight * 0.32);
+      const maxH = Math.round(window.innerHeight * 0.92);
+      // Dragging UP increases height (startY - currentY is positive when moving up)
+      const delta = rs.startY - e.clientY;
+      setPanelHeight(clamp(rs.startHeight + delta, minH, maxH));
+      return;
+    }
+
+    // Desktop move path
+    const ms = moveDragRef.current;
+    if (!ms.active || ms.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - ms.startX;
+    const dy = e.clientY - ms.startY;
+    const nextX = ms.baseX + dx;
+    const nextY = ms.baseY + dy;
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+    const minX = margin - ms.panelLeft;
+    const maxX = vw - ms.panelW - margin - ms.panelLeft;
+    const minY = margin - ms.panelTop;
+    const maxY = vh - ms.panelH - margin - ms.panelTop;
+
+    setOffset({
+      x: clamp(nextX, minX, maxX),
+      y: clamp(nextY, minY, maxY),
+    });
+  }, []);
+
+  /* ── Pointer up ── */
+  const onPointerUp = useCallback((e) => {
+    // Mobile resize path
+    const rs = resizeDragRef.current;
+    if (rs.active && rs.pointerId === e.pointerId) {
+      rs.active = false;
+      setIsDragging(false);
+
+      // If user dragged far DOWN (shrinking below ~32% vh), close the panel
+      if (panelHeight !== null && panelHeight < window.innerHeight * 0.28) {
+        onClose();
+      }
+      return;
+    }
+
+    // Desktop move path
+    const ms = moveDragRef.current;
+    if (!ms.active || ms.pointerId !== e.pointerId) return;
+    ms.active = false;
+    setIsDragging(false);
+  }, [panelHeight, onClose]);
+
+  // Attach global pointer listeners while open
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [isOpen, onPointerMove, onPointerUp]);
+
+  return { panelRef, offset, isDragging, onPointerDown, panelHeight };
 }
 
 export default function SpideyBot({ theme }) {
-  const isDark = theme === 'dark';
+  const isDark  = theme === 'dark';
   const botName = isDark ? 'Venom Bot' : 'Spidey Bot';
   const botIcon = isDark ? '🕷' : '🕸';
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen,    setIsOpen]    = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [modeBadge, setModeBadge] = useState(() => (HAS_GEMINI_KEY ? 'Gemini online' : 'Fallback mode'));
+  const [modeBadge,  setModeBadge]  = useState(() => (HAS_GEMINI_KEY ? 'Gemini online' : 'Fallback mode'));
   const [lastIntentWasFit, setLastIntentWasFit] = useState(false);
   const [input, setInput] = useState('');
   const messagesRef = useRef(null);
   const techAliasMap = useMemo(() => buildTechAliasMap(), []);
-  const coverage = useMemo(() => buildCoverage(techAliasMap), [techAliasMap]);
+  const coverage     = useMemo(() => buildCoverage(techAliasMap), [techAliasMap]);
+
+  const handleClose = useCallback(() => setIsOpen(false), []);
+  const {
+    panelRef,
+    offset,
+    isDragging,
+    onPointerDown,
+    panelHeight,
+  } = useBoundedDrag(isOpen, handleClose);
+
   const [messages, setMessages] = useState(() => [
     {
       id: 'init',
@@ -733,13 +905,43 @@ export default function SpideyBot({ theme }) {
     sendMessage(input);
   };
 
+  const panelStyle = {
+    ...(offset.x !== 0 || offset.y !== 0
+      ? {
+          transform: `translate(${offset.x}px, ${offset.y}px)`,
+          transition: isDragging ? 'none' : undefined,
+        }
+      : {}),
+    ...(panelHeight ? { height: `${panelHeight}px`, maxHeight: 'none' } : {}),
+  };
+
   return (
-    <div className={`spidey-bot${isOpen ? ' spidey-bot--open' : ''}`} aria-live="polite">
+    <div className={`spidey-bot${isOpen ? ' spidey-bot--open' : ''}${isDragging ? ' spidey-bot--resizing' : ''}`} aria-live="polite">
       <section
+        ref={panelRef}
         className="spidey-bot__panel"
+        style={panelStyle}
         aria-label={`${botName} assistant`}
         aria-hidden={!isOpen}
       >
+        {/*
+          Drag handle — on mobile this resizes the panel height.
+          Drag UP  → taller panel
+          Drag DOWN past threshold → closes the panel
+          On desktop this moves the floating card.
+        */}
+        <div
+          className="spidey-bot__drag-handle"
+          onPointerDown={onPointerDown}
+          aria-label="Drag to resize"
+          role="separator"
+          aria-orientation="horizontal"
+        >
+          <span className="spidey-bot__drag-pill" />
+          {/* Small resize hint arrows rendered via CSS pseudo-elements */}
+          <span className="spidey-bot__drag-hint" aria-hidden="true">↕</span>
+        </div>
+
         <header className="spidey-bot__header">
           <div className="spidey-bot__title-wrap">
             <span className="spidey-bot__avatar" aria-hidden="true">{botIcon}</span>
@@ -754,10 +956,10 @@ export default function SpideyBot({ theme }) {
           <button
             type="button"
             className="spidey-bot__close"
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
             aria-label="Close assistant"
           >
-            x
+            ✕
           </button>
         </header>
 
@@ -836,16 +1038,18 @@ export default function SpideyBot({ theme }) {
             disabled={isThinking}
           />
           <button type="submit" className="spidey-bot__send" disabled={isThinking}>
-            {isThinking ? 'Thinking...' : 'Send'}
+            {isThinking ? '...' : 'Send'}
           </button>
         </form>
       </section>
 
+      {/* FAB — hidden while panel is open */}
       <button
         type="button"
         className="spidey-bot__fab"
         onClick={() => setIsOpen(prev => !prev)}
-        aria-label={isOpen ? `Close ${botName}` : `Open ${botName}`}
+        aria-label={`Open ${botName}`}
+        aria-expanded={isOpen}
       >
         <span aria-hidden="true" className="spidey-bot__fab-icon">{botIcon}</span>
         <span className="spidey-bot__fab-text">{isDark ? 'Venom Bot' : 'Spidey Bot'}</span>
